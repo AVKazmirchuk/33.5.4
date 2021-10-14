@@ -1,27 +1,52 @@
-template <class C>
-long double arithmeticMean(const C& container)
-{
-    
-    using value_type = typename container::value_type;
-    using key_type = std::remove_reference_t<decltype(std::declval<value_type>)>;
-    key_type sum = 0;
-    //long double sum{};
-    long long count{};
+﻿#include <iostream>
+#include <array>
+#include <vector>
 
-    for (const auto& elem : container)
+template <class T>
+auto arithmeticMean(const T& container, long double size = 0)
+{
+    long double tmp{};
+
+    if constexpr (!std::is_array_v<T> && !std::is_pointer_v<T>)
     {
-        sum += elem;
-        ++count;
+        size = container.size();
+    }
+    else
+    {
+        std::cout << "array:\n";
+        
+        if (std::is_array_v<T>) size = std::extent_v<T>;
     }
 
-    return sum / count;
+    for (int i{}; i < size; ++i)
+    {
+        tmp += container[i] / size;
+        std::cout << tmp << " ";
+    }
+
+    return tmp;
 }
 
 int main()
 {
-    std::vector<int> v { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::array<int, 9> a{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::cout << arithmeticMean(a) << '\n';
+
+
+    
+    std::vector<int> v{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     std::cout << arithmeticMean(v) << '\n';
 
-    int mass[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    std::cout << arithmeticMean(mass) << '\n';
+    
+
+    
+
+    int ms[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::cout << arithmeticMean(ms) << '\n';
+
+    int* md = new int[9] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::cout << arithmeticMean(md, 9) << '\n';
+    delete[] md;
+
+    
 }
