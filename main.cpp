@@ -6,8 +6,8 @@
 #include <forward_list>
 #include <set>
 #include <unordered_set>
-#include <tuple>
-//#include <type_traits>
+
+
 
 bool cinNoFail()
 {
@@ -15,10 +15,9 @@ bool cinNoFail()
     {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        //std::cout << "Invalid data!\n";
         return false;
     }
-    
+
     return true;
 }
 
@@ -48,44 +47,44 @@ void checkInput(T& elem)
     }
 }
 
-//Ввод данных для std::array
+/*//Ввод данных для std::array
 template <typename T, size_t size>
 void input(std::array<T, size>& container)
 {
     std::cout << "Enter the array elements:\n";
-    
+
     for (auto& elem : container)
     {
         checkInput(elem);
     }
+}*/
+
+void enterSize(unsigned long long& size)
+{
+    while (true)
+    {
+        std::cout << "Number of items in the container: ";
+
+        std::cin >> size;
+
+        if (cinNoFail() && size > 0)
+        {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            break;
+        }
+        std::cout << "Invalid data!\n";
+    }
 }
 
-//Ввод данных (основная функция) для обычных и динамических массивов
+//Ввод данных (основная функция) для статических массивов
 template <typename T>
-void input(T*& container, long long& size = 0)
+void input(T container[], unsigned long long&& size, const char* name)
 {
     T elem{};
 
-    if constexpr (std::is_array_v<T>) std::cout << "is_array\n";
-    else
-    {
-        while (true)
-        {
-            std::cout << "Number of items in the container: ";
+    std::cout << name << "! Number of items in the container: " << size << '\n';
 
-            std::cin >> size;
-
-            if (cinNoFail() && size > 0)
-            {
-                break;
-            }
-            std::cout << "Invalid data!\n";
-        }
-
-        container = new T[size];
-    }
-
-    std::cout << "Enter the array elements:\n";
+    std::cout << "Enter the array elements: ";
 
     for (int i{}; i < size; ++i)
     {
@@ -94,11 +93,32 @@ void input(T*& container, long long& size = 0)
     }
 }
 
-//Ввод данных для контейнеров STL, одинаково не для всех (в условии ниже понятно), так как они имеют разные функции ввода
+//Ввод данных (основная функция) для динамических массивов
 template <typename T>
-void input(T& container)
+void input(T*& container, unsigned long long& size, const char* name)
 {
-    long long size;
+    T elem{};
+
+    std::cout << name << "!\n";
+
+    enterSize(size);
+
+    container = new T[size];
+
+    std::cout << "Enter the array elements: ";
+
+    for (int i{}; i < size; ++i)
+    {
+        checkInput(elem);
+        container[i] = elem;
+    }
+}
+
+/*//Ввод данных для контейнеров STL, одинаково не для всех (в условии ниже понятно), так как они имеют разные функции ввода
+template <typename T>
+void input(T& container, const char* name)
+{
+    unsigned long long size;
 
     while (true)
     {
@@ -114,6 +134,8 @@ void input(T& container)
     }
 
     typename T::value_type elem{};
+
+    std::cout << "Enter the array elements: ";
 
     if constexpr (std::is_same_v<T, std::forward_list<typename T::value_type>>)
     {
@@ -142,11 +164,11 @@ void input(T& container)
             container.push_back(elem);
         }
     }
-}
+}*/
 
 //Вычисление среднего арифметического для обычных и динамических массивов
 template <typename T>
-auto arithmeticMean(const T* container, long long size)
+auto arithmeticMean(const T* container, const unsigned long long size)
 {
     long double tmp{};
 
@@ -162,7 +184,7 @@ auto arithmeticMean(const T* container, long long size)
     else return tmp;
 }
 
-//Вычисление среднего арифметического для контейнеров STL
+/*//Вычисление среднего арифметического для контейнеров STL
 template <typename T>
 auto arithmeticMean(const T& container)
 {
@@ -183,14 +205,14 @@ auto arithmeticMean(const T& container)
     //Для типа char необходимо "среднюю" преобразовать к его типу, так как результат совсем неверный
     if constexpr (std::is_same_v<typename T::value_type, char>) return static_cast<char>(tmp);
     else return tmp;
-}
+}*/
 
 int main()
 {
-    //Для тестирования всех контейнеров, которые знаю
+    //Для тестирования всех контейнеров
     //Контейнер или группа контейнеров использует свою шаблонную функцию
     //С функцией ввода данных
-        
+
     /*std::array<char, 9> a2;
     input(a2);
     std::cout << arithmeticMean(a2) << '\n';*/
@@ -227,25 +249,21 @@ int main()
     input(ums2);
     std::cout << arithmeticMean(ums2) << '\n';*/
 
-    /*int as2[9]{};
-    input(as2, 9);
-    std::cout << arithmeticMean(as2, 9) << '\n';*/
+    int as2[9]{};
+    input(as2, 9, "static mass");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(as2, 9) << "\n\n";
 
-    
-    
-    
-    int* ad2{ nullptr };
-    long long size{};
-    input(ad2, size);
-    std::cout << arithmeticMean(ad2, size) << '\n';
+    char* ad2{ nullptr };
+    unsigned long long size{};
+    input(ad2, size, "dynamic mass");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(ad2, size) << "\n\n";
     delete[] ad2;
 
+   
 
-
-
-    //Для тестирования всех контейнеров, которые знаю
+    //Для тестирования всех контейнеров
     //Контейнер или группа контейнеров использует свою шаблонную функцию
-    
+
     /*
     std::array<int, 9> a{ 1.1, 2, 3, 4, 5, 6, 7, 8, 9 };
     std::cout << arithmeticMean(a) << '\n';
