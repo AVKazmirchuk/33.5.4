@@ -18,24 +18,17 @@ bool cinNoFail()
         //std::cout << "Invalid data!\n";
         return false;
     }
-    else
-    {
-        if (std::cin.peek() != '\n')
-        {
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            //std::cout << "Invalid data!\n";
-            return false;
-        }
-    }
+    
     return true;
 }
 
+//Функция ввода элемента и проверки совпадения типа элементов и вводимых данных (знаковый/беззнаковый)
 template <typename T>
 void checkInput(T& elem)
 {
     while (true)
     {
-        std::make_signed_t<std::decay_t<T>> tmp;
+        std::make_signed_t<std::decay_t<T>> tmp{};
 
         std::cin >> tmp;
 
@@ -55,20 +48,45 @@ void checkInput(T& elem)
     }
 }
 
+//Ввод данных для std::array
 template <typename T, size_t size>
 void input(std::array<T, size>& container)
 {
+    std::cout << "Enter the array elements:\n";
+    
     for (auto& elem : container)
     {
         checkInput(elem);
     }
 }
 
+//Ввод данных (основная функция) для обычных и динамических массивов
 template <typename T>
-void input(T* container, long long size)
+void input(T*& container, long long& size = 0)
 {
     T elem{};
-    
+
+    if constexpr (std::is_array_v<T>) std::cout << "is_array\n";
+    else
+    {
+        while (true)
+        {
+            std::cout << "Number of items in the container: ";
+
+            std::cin >> size;
+
+            if (cinNoFail() && size > 0)
+            {
+                break;
+            }
+            std::cout << "Invalid data!\n";
+        }
+
+        container = new T[size];
+    }
+
+    std::cout << "Enter the array elements:\n";
+
     for (int i{}; i < size; ++i)
     {
         checkInput(elem);
@@ -76,6 +94,7 @@ void input(T* container, long long size)
     }
 }
 
+//Ввод данных для контейнеров STL, одинаково не для всех (в условии ниже понятно), так как они имеют разные функции ввода
 template <typename T>
 void input(T& container)
 {
@@ -87,9 +106,8 @@ void input(T& container)
 
         std::cin >> size;
 
-        if (cinNoFail())
+        if (cinNoFail() && size > 0)
         {
-
             break;
         }
         std::cout << "Invalid data!\n";
@@ -105,9 +123,9 @@ void input(T& container)
             container.push_front(elem);
         }
     }
-    else if constexpr (std::is_same_v<T, std::set<typename T::value_type>> || 
-        std::is_same_v<T, std::multiset<typename T::value_type>> || 
-        std::is_same_v<T, std::unordered_set<typename T::value_type>> || 
+    else if constexpr (std::is_same_v<T, std::set<typename T::value_type>> ||
+        std::is_same_v<T, std::multiset<typename T::value_type>> ||
+        std::is_same_v<T, std::unordered_set<typename T::value_type>> ||
         std::is_same_v<T, std::unordered_multiset<typename T::value_type>>)
     {
         for (int i{}; i < size; ++i)
@@ -126,6 +144,7 @@ void input(T& container)
     }
 }
 
+//Вычисление среднего арифметического для обычных и динамических массивов
 template <typename T>
 auto arithmeticMean(const T* container, long long size)
 {
@@ -133,35 +152,45 @@ auto arithmeticMean(const T* container, long long size)
 
     for (int i{}; i < size; ++i)
     {
+        //Решил каждый элемент вначале делить на размер, а потом складывать результат, для избежания переполнения
         tmp += static_cast<long double>(container[i]) / size;
         std::cout << tmp << " ";
     }
 
+    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результат совсем неверный
     if constexpr (std::is_same_v<T, char*>) return static_cast<char>(tmp);
     else return tmp;
 }
 
+//Вычисление среднего арифметического для контейнеров STL
 template <typename T>
 auto arithmeticMean(const T& container)
 {
     long double tmp{};
     size_t size;
-       
+
+    //std::forward_list не имеет параметра размера, поэтому необходимо вычислить его для унификации функции
     if constexpr (std::is_same_v<T, std::forward_list<typename T::value_type>>) size = std::distance(container.begin(), container.end());
     else size = container.size();
 
     for (const auto& elem : container)
     {
+        //Решил каждый элемент вначале делить на размер, а потом складывать результат, для избежания переполнения
         tmp += static_cast<long double>(elem) / size;
         std::cout << tmp << " ";
     }
-       
+
+    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результат совсем неверный
     if constexpr (std::is_same_v<typename T::value_type, char>) return static_cast<char>(tmp);
     else return tmp;
 }
 
 int main()
 {
+    //Для тестирования всех контейнеров, которые знаю
+    //Контейнер или группа контейнеров использует свою шаблонную функцию
+    //С функцией ввода данных
+        
     /*std::array<char, 9> a2;
     input(a2);
     std::cout << arithmeticMean(a2) << '\n';*/
@@ -202,18 +231,26 @@ int main()
     input(as2, 9);
     std::cout << arithmeticMean(as2, 9) << '\n';*/
 
-    int* ad2 = new int[9]{};
-    input(ad2, 9);
-    std::cout << arithmeticMean(ad2, 9) << '\n';
+    
+    
+    
+    int* ad2{ nullptr };
+    long long size{};
+    input(ad2, size);
+    std::cout << arithmeticMean(ad2, size) << '\n';
     delete[] ad2;
 
 
 
-    /*std::array<int, 9> a{ 1.1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+    //Для тестирования всех контейнеров, которые знаю
+    //Контейнер или группа контейнеров использует свою шаблонную функцию
+    
+    /*
+    std::array<int, 9> a{ 1.1, 2, 3, 4, 5, 6, 7, 8, 9 };
     std::cout << arithmeticMean(a) << '\n';
 
     std::vector<int> v{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    input(v);
     std::cout << arithmeticMean(v) << '\n';
 
     std::deque<int> d{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -240,9 +277,8 @@ int main()
     int as[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     std::cout << arithmeticMean(as, 9) << '\n';
 
-    /*int* ad = new int[9]{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int* ad = new int[9]{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     std::cout << arithmeticMean(ad, 9) << '\n';
-    delete[] ad;*/
-
-
+    delete[] ad;
+    */
 }
