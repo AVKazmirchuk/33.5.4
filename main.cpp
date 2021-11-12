@@ -25,41 +25,65 @@ bool cinNoFail()
 template <typename T>
 void checkInput(T& elem)
 {
-    while (true)
-    {
-        std::make_signed_t<std::decay_t<T>> tmp{};
-
-        std::cin >> tmp;
-
-        if (cinNoFail())
+        if constexpr (!std::is_same_v<T, bool>)
         {
-            if (std::is_unsigned_v<std::decay_t<T>> && tmp < 0)
+            std::make_signed_t<std::decay_t<T>> tmp{};
+
+            std::cin >> tmp;
+
+            if (cinNoFail())
             {
-                std::cout << "You entered a negative number!\n";
-                continue;
+                if (std::is_unsigned_v<std::decay_t<T>> && tmp < 0)
+                {
+                    if constexpr (std::is_same_v<T, unsigned char>)
+                    {
+                        elem = 'NUL';
+                        return;
+                    }
+                    else
+                    {
+                        elem = 0;
+                        return;
+                    }
+                }
+
+                elem = tmp;
+                return;
             }
-
-            elem = tmp;
-            break;
+            else
+            {
+                elem = 0;
+                return;
+            }
         }
+        else
+        {
+            std::cin >> elem;
 
-        std::cout << "Type mismatch!\n";
-    }
+            if (cinNoFail()) return;
+            else
+            {
+                elem = 0;
+                return;
+            }
+        }
 }
 
-/*//Ввод данных для std::array
+//Ввод данных (основная функция) для std::array
 template <typename T, size_t size>
-void input(std::array<T, size>& container)
+void input(std::array<T, size>& container, const char* name)
 {
-    std::cout << "Enter the array elements:\n";
+    std::cout << name << "! Number of items in the container: " << size << '\n';
+    
+    std::cout << "Enter the array elements: ";
 
     for (auto& elem : container)
     {
         checkInput(elem);
     }
-}*/
+}
 
-void enterSize(unsigned long long& size)
+void enterSize(size_t& size)
 {
     while (true)
     {
@@ -77,8 +101,8 @@ void enterSize(unsigned long long& size)
 }
 
 //Ввод данных (основная функция) для статических массивов
-template <typename T>
-void input(T container[], unsigned long long&& size, const char* name)
+template <typename T, const size_t size>
+void input(T (&container)[size], const char* name)
 {
     T elem{};
 
@@ -95,7 +119,7 @@ void input(T container[], unsigned long long&& size, const char* name)
 
 //Ввод данных (основная функция) для динамических массивов
 template <typename T>
-void input(T*& container, unsigned long long& size, const char* name)
+void input(T*& container, size_t& size, const char* name)
 {
     T elem{};
 
@@ -107,31 +131,22 @@ void input(T*& container, unsigned long long& size, const char* name)
 
     std::cout << "Enter the array elements: ";
 
-    for (int i{}; i < size; ++i)
+    for (size_t i{}; i < size; ++i)
     {
         checkInput(elem);
         container[i] = elem;
     }
 }
 
-/*//Ввод данных для контейнеров STL, одинаково не для всех (в условии ниже понятно), так как они имеют разные функции ввода
+//Ввод данных для контейнеров STL, одинаково не для всех (в условии ниже понятно), так как они имеют разные функции ввода
 template <typename T>
 void input(T& container, const char* name)
 {
-    unsigned long long size;
+    size_t size;
 
-    while (true)
-    {
-        std::cout << "Number of items in the container: ";
+    std::cout << name << "!\n";
 
-        std::cin >> size;
-
-        if (cinNoFail() && size > 0)
-        {
-            break;
-        }
-        std::cout << "Invalid data!\n";
-    }
+    enterSize(size);
 
     typename T::value_type elem{};
 
@@ -158,33 +173,33 @@ void input(T& container, const char* name)
     }
     else
     {
-        for (int i{}; i < size; ++i)
+        for (size_t i{}; i < size; ++i)
         {
             checkInput(elem);
             container.push_back(elem);
         }
     }
-}*/
+}
 
 //Вычисление среднего арифметического для обычных и динамических массивов
 template <typename T>
-auto arithmeticMean(const T* container, const unsigned long long size)
+auto arithmeticMean(const T* container, const size_t size)
 {
     long double tmp{};
 
-    for (int i{}; i < size; ++i)
+    for (size_t i{}; i < size; ++i)
     {
         //Решил каждый элемент вначале делить на размер, а потом складывать результат, для избежания переполнения
         tmp += static_cast<long double>(container[i]) / size;
         std::cout << tmp << " ";
     }
 
-    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результат совсем неверный
-    if constexpr (std::is_same_v<T, char*>) return static_cast<char>(tmp);
+    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результатом является средний код, а не символ
+    if constexpr (std::is_same_v<T, char> || std::is_same_v<T, signed char> || std::is_same_v<T, unsigned char>) return static_cast<char>(tmp);
     else return tmp;
 }
 
-/*//Вычисление среднего арифметического для контейнеров STL
+//Вычисление среднего арифметического для контейнеров STL
 template <typename T>
 auto arithmeticMean(const T& container)
 {
@@ -202,10 +217,11 @@ auto arithmeticMean(const T& container)
         std::cout << tmp << " ";
     }
 
-    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результат совсем неверный
-    if constexpr (std::is_same_v<typename T::value_type, char>) return static_cast<char>(tmp);
+    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результатом является средний код, а не символ
+    if constexpr (std::is_same_v<typename T::value_type, char> || std::is_same_v<typename T::value_type, signed char> || 
+        std::is_same_v<typename T::value_type, unsigned char>) return static_cast<char>(tmp);
     else return tmp;
-}*/
+}
 
 int main()
 {
@@ -213,59 +229,59 @@ int main()
     //Контейнер или группа контейнеров использует свою шаблонную функцию
     //С функцией ввода данных
 
-    /*std::array<char, 9> a2;
-    input(a2);
-    std::cout << arithmeticMean(a2) << '\n';*/
+    /*std::array<bool, 9> a2;
+    input(a2, "std::array");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(a2) << "\n\n";*/
 
-    /*std::vector<int> v2{};
-    input(v2);
-    std::cout << arithmeticMean(v2) << '\n';*/
+    /*std::vector<signed char> v2{};
+    input(v2, "std::vector");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(v2) << "\n\n";*/
 
-    /*std::deque<int> d2;
-    input(d2);
-    std::cout << arithmeticMean(d2) << '\n';*/
+    /*std::deque<unsigned char> d2;
+    input(d2, "std::deque");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(d2) << "\n\n";*/
 
-    /*std::list<int> l2;
-    input(l2);
-    std::cout << arithmeticMean(l2) << '\n';*/
+    /*std::list<short> l2;
+    input(l2, "std::list");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(l2) << "\n\n";*/
 
-    /*std::forward_list<int> fl2;
-    input(fl2);
-    std::cout << arithmeticMean(fl2) << '\n';*/
+    std::forward_list<unsigned short> fl2;
+    input(fl2, "std::forward_list");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(fl2) << "\n\n";
 
     /*std::set<int> s2;
-    input(s2);
-    std::cout << arithmeticMean(s2) << '\n';*/
+    input(s2, "std::set");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(s2) << "\n\n";*/
 
     /*std::multiset<int> ms2;
-    input(ms2);
-    std::cout << arithmeticMean(ms2) << '\n';*/
+    input(ms2, "std::multiset");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(ms2) << "\n\n";*/
 
     /*std::unordered_set<int> us2;
-    input(us2);
-    std::cout << arithmeticMean(us2) << '\n';*/
+    input(us2, "std::unordered_set");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(us2) << "\n\n";*/
 
     /*std::unordered_multiset<int> ums2;
-    input(ums2);
-    std::cout << arithmeticMean(ums2) << '\n';*/
+    input(ums2, "std::unordered_multiset");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(ums2) << "\n\n";*/
+    
+    /*int as2[9]{};
+    input(as2, "static mass");
+    std::cout << "\nArithmetic mean: " << arithmeticMean(as2, 9) << "\n\n";*/
 
-    int as2[9]{};
-    input(as2, 9, "static mass");
-    std::cout << "\nArithmetic mean: " << arithmeticMean(as2, 9) << "\n\n";
-
-    char* ad2{ nullptr };
-    unsigned long long size{};
+    /*char* ad2{ nullptr };
+    size_t size{};
     input(ad2, size, "dynamic mass");
     std::cout << "\nArithmetic mean: " << arithmeticMean(ad2, size) << "\n\n";
-    delete[] ad2;
+    delete[] ad2;*/
 
-   
+
 
     //Для тестирования всех контейнеров
     //Контейнер или группа контейнеров использует свою шаблонную функцию
 
     /*
-    std::array<int, 9> a{ 1.1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::array<int, 9> a{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     std::cout << arithmeticMean(a) << '\n';
 
     std::vector<int> v{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -299,4 +315,5 @@ int main()
     std::cout << arithmeticMean(ad, 9) << '\n';
     delete[] ad;
     */
+    
 }
