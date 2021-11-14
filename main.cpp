@@ -7,14 +7,18 @@
 #include <set>
 #include <unordered_set>
 
-
-
 bool cinNoFail()
 {
     if (std::cin.fail())
     {
         std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        for (;;)
+        {
+            std::cin.ignore();
+            if (std::cin.peek() == ' ' || std::cin.peek() == '\n' || std::cin.peek() == '\t') break;
+        }
+                
         return false;
     }
 
@@ -25,48 +29,63 @@ bool cinNoFail()
 template <typename T>
 void checkInput(T& elem)
 {
-        if constexpr (!std::is_same_v<T, bool>)
+    //Проверка на знаковость
+    if (std::is_signed_v<T>)
+    {
+        //Элемент знаковый
+
+        std::cin >> elem;
+
+        if (cinNoFail()) return;
+
+        //Если при чтении произошла ошибка
+        elem = 0;
+        return;
+    }
+
+    //Элемент беззнаковый
+
+    //Необходимо отбросить bool, float, double и long double, так как эти типы не могут быть беззнаковыми
+    if constexpr (!std::is_same_v<T, bool> && !std::is_same_v<T, float> && !std::is_same_v<T, double> && !std::is_same_v<T, long double>)
+    {
+        //Создание переменной такого же типа, но со знаком
+        std::make_signed_t<T> tmp{};
+
+        std::cin >> tmp;
+
+        if (cinNoFail())
         {
-            std::make_signed_t<std::decay_t<T>> tmp{};
-
-            std::cin >> tmp;
-
-            if (cinNoFail())
+            //Проверка на отрицательное значение 
+            if (tmp < 0)
             {
-                if (std::is_unsigned_v<std::decay_t<T>> && tmp < 0)
-                {
-                    if constexpr (std::is_same_v<T, unsigned char>)
-                    {
-                        elem = 'NUL';
-                        return;
-                    }
-                    else
-                    {
-                        elem = 0;
-                        return;
-                    }
-                }
-
-                elem = tmp;
-                return;
-            }
-            else
-            {
+                //Присваиваем 0 для избежания переполнения
                 elem = 0;
                 return;
+                
             }
+            //Было введено положительное значение, OK!
+            elem = tmp;
+            return;
         }
+        //Если при чтении произошла ошибка
         else
         {
-            std::cin >> elem;
-
-            if (cinNoFail()) return;
-            else
-            {
-                elem = 0;
-                return;
-            }
+            elem = 0;
+            return;
         }
+    }
+    //Эта проверка на чтение для типов bool, float, double и long double
+    else
+    {
+        std::cin >> elem;
+
+        if (cinNoFail()) return;
+        else
+        {
+            elem = 0;
+            return;
+        }
+    }
 }
 
 //Ввод данных (основная функция) для std::array
@@ -74,7 +93,7 @@ template <typename T, size_t size>
 void input(std::array<T, size>& container, const char* name)
 {
     std::cout << name << "! Number of items in the container: " << size << '\n';
-    
+
     std::cout << "Enter the array elements: ";
 
     for (auto& elem : container)
@@ -96,13 +115,15 @@ void enterSize(size_t& size)
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             break;
         }
+        
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cout << "Invalid data!\n";
     }
 }
 
 //Ввод данных (основная функция) для статических массивов
 template <typename T, const size_t size>
-void input(T (&container)[size], const char* name)
+void input(T(&container)[size], const char* name)
 {
     T elem{};
 
@@ -154,7 +175,7 @@ void input(T& container, const char* name)
 
     if constexpr (std::is_same_v<T, std::forward_list<typename T::value_type>>)
     {
-        for (int i{}; i < size; ++i)
+        for (size_t i{}; i < size; ++i)
         {
             checkInput(elem);
             container.push_front(elem);
@@ -194,7 +215,7 @@ auto arithmeticMean(const T* container, const size_t size)
         std::cout << tmp << " ";
     }
 
-    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результатом является средний код, а не символ
+    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результатом является средний код символов, а не символ
     if constexpr (std::is_same_v<T, char> || std::is_same_v<T, signed char> || std::is_same_v<T, unsigned char>) return static_cast<char>(tmp);
     else return tmp;
 }
@@ -217,8 +238,8 @@ auto arithmeticMean(const T& container)
         std::cout << tmp << " ";
     }
 
-    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результатом является средний код, а не символ
-    if constexpr (std::is_same_v<typename T::value_type, char> || std::is_same_v<typename T::value_type, signed char> || 
+    //Для типа char необходимо "среднюю" преобразовать к его типу, так как результатом является средний код символов, а не символ
+    if constexpr (std::is_same_v<typename T::value_type, char> || std::is_same_v<typename T::value_type, signed char> ||
         std::is_same_v<typename T::value_type, unsigned char>) return static_cast<char>(tmp);
     else return tmp;
 }
@@ -233,21 +254,21 @@ int main()
     input(a2, "std::array");
     std::cout << "\nArithmetic mean: " << arithmeticMean(a2) << "\n\n";*/
 
-    /*std::vector<signed char> v2{};
+    /*std::vector<char> v2{};
     input(v2, "std::vector");
     std::cout << "\nArithmetic mean: " << arithmeticMean(v2) << "\n\n";*/
 
-    /*std::deque<unsigned char> d2;
+    /*std::deque<short> d2;
     input(d2, "std::deque");
     std::cout << "\nArithmetic mean: " << arithmeticMean(d2) << "\n\n";*/
 
-    /*std::list<short> l2;
+    /*std::list<unsigned short> l2;
     input(l2, "std::list");
     std::cout << "\nArithmetic mean: " << arithmeticMean(l2) << "\n\n";*/
 
-    std::forward_list<unsigned short> fl2;
+    /*std::forward_list<float> fl2;
     input(fl2, "std::forward_list");
-    std::cout << "\nArithmetic mean: " << arithmeticMean(fl2) << "\n\n";
+    std::cout << "\nArithmetic mean: " << arithmeticMean(fl2) << "\n\n";*/
 
     /*std::set<int> s2;
     input(s2, "std::set");
@@ -264,7 +285,7 @@ int main()
     /*std::unordered_multiset<int> ums2;
     input(ums2, "std::unordered_multiset");
     std::cout << "\nArithmetic mean: " << arithmeticMean(ums2) << "\n\n";*/
-    
+
     /*int as2[9]{};
     input(as2, "static mass");
     std::cout << "\nArithmetic mean: " << arithmeticMean(as2, 9) << "\n\n";*/
@@ -315,5 +336,5 @@ int main()
     std::cout << arithmeticMean(ad, 9) << '\n';
     delete[] ad;
     */
-    
+
 }
